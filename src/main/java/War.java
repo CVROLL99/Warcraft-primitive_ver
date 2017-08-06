@@ -2,7 +2,9 @@ import Interfaces.Community;
 import Objects.*;
 
 import javax.xml.bind.Element;
+import java.io.File;
 import java.util.ArrayList;
+import java.util.LinkedList;
 import java.util.List;
 
 
@@ -16,9 +18,9 @@ public class War {
      * объявляем все классы, которые могут быть созданы
      */
     public static Integer numberOfTeam1, numberOfTeam2;//Какая команда создается, кто ходит первый
-    public String nameCommand1, nameCommand2;//Имя команды
+    public String nameCommand1, nameCommand2,nameCommandTurn;//Имя команды
     public Integer teamTurn;//ход какой команды
-    public Integer whoTurn,whoAttacked;//кто атакует, кого атакуем
+    public int whoTurn,whoAttacked;//кто атакует, кого атакуем
     public ElfAncor elfAncor1, elfAncor2, elfAncor3;
     public ElfMag elfMag1;
     public ElfWarrior elfWarrior1, elfWarrior2, elfWarrior3, elfWarrior4;
@@ -31,11 +33,12 @@ public class War {
     public UndeadAncor undeadAncor1, undeadAncor2, undeadAncor3;
     public UndeadMag undeadMag1;
     public UndeadWarrior undeadWarrior1, undeadWarrior2, undeadWarrior3, undeadWarrior4;
-    public static List<Community> firstTeam = new ArrayList();//Коллекция с первой командой
-    public static List<Community> secondTeam = new ArrayList();//Коллекция с первой командой
-    public static List<Community> actualTeam = new ArrayList();//Команда которая ходит
-    public static List<Community> attackedTeam = new ArrayList();//Команда, которую актакуем
+    public static List<Community> firstTeam = new ArrayList<Community>();//Коллекция с первой командой
+    public static List<Community> secondTeam = new ArrayList<Community>();//Коллекция с первой командой
+    public static List<Community> actualTeam = new ArrayList<Community>();//Команда которая ходит
+    public static List<Community> attackedTeam = new ArrayList<Community>();//Команда, которую актакуем
     public List<String> nameList = new ArrayList();//Словарь имен для персов
+    public static int size = 7;//Изначальный размер коллекции
 
     /**
      * Метод для задания имен персам
@@ -95,6 +98,7 @@ public class War {
 
         if (numberOfTeam1 == 0) {
             nameCommand1 = "Эльфы";
+
             System.out.println('\n' + "***************************" + '\n' + "**" + " Первая команда - " + nameCommand1 +
                     " **" + '\n' + "***************************" + '\n');
 
@@ -178,54 +182,63 @@ public class War {
 
 
         RunWar runWar = new RunWar();
-        Thread firstTeamThread = new Thread(runWar);
-        Thread secondTeamThread = new Thread(runWar);
-        firstTeamThread.setName(nameCommand1);
-        secondTeamThread.setName(nameCommand2);
+
         teamTurn = (int) (Math.random() * 2);
         if (teamTurn == 0) {
-            firstTeamThread.start();
-            secondTeamThread.start();
-            }else{
-            secondTeamThread.start();
-            firstTeamThread.start();
+            nameCommandTurn = nameCommand1;
+        } else {
+            nameCommandTurn = nameCommand2;
         }
 
 
+        while(size >= 0) {
+            runWar.run();
+        }
+
+        System.out.println(actualTeam);
+        System.out.println(firstTeam);
+        System.out.println(secondTeam);
+        System.out.println(attackedTeam);
     }
 
 
+    class RunWar {
 
-    public class RunWar implements Runnable {
 
         /**
          * Метод выбирает актуальную коллекцию для потока
          */
-        public void setActualTeam(){
-            actualTeam = secondTeam;
-            attackedTeam = firstTeam;
-            if (Thread.currentThread().getName()==nameCommand1) {
-                actualTeam = firstTeam;
-                attackedTeam = secondTeam;
+        public void setActualTeam() {
+
+            if (true) {
+                actualTeam = secondTeam;
+                attackedTeam = firstTeam;
+                if (nameCommandTurn == nameCommand1) {
+                    actualTeam = firstTeam;
+                    attackedTeam = secondTeam;
+
+                }
             }
         }
+
 
         /**
          * Метод выбирает количество действий для клана
          */
-        public synchronized void getObject() {
+        public void run() {
 
             setActualTeam();
-            attack = (int) (Math.random() * 7 + 1);//Сколько ходов сделает группа (+1 потому что не должно получиться ноль)
+            attack = (int) (Math.random() * size + 1);//Сколько ходов сделает группа (+1 потому что не должно получиться
+            // ноль)
 
-            System.out.println("Ходят " + Thread.currentThread().getName() + '\n' +
+            System.out.println("Ходят " + nameCommandTurn + '\n' +
                     "Группа сделает " +
                     attack + " хода (-ов)" + '\n' + "------------------");
 
                 while (attack > 0) {
 
-                    whoTurn = (int) (Math.random() * 7 + 1);//какой перс ходит
-                    whoAttacked = (int) (Math.random() * 7 + 1);//кого атакуют
+                    whoTurn = (int) (Math.random() * size + 1);//какой перс ходит
+                    whoAttacked = (int) (Math.random() * size + 1);//кого атакуют
                     Integer newHP = attackedTeam.get(whoAttacked).getHp() - actualTeam.get(whoTurn).getDamage();//Новое значение здоровья
                     attackedTeam.get(whoAttacked).setHp(newHP);
 
@@ -237,34 +250,42 @@ public class War {
                                 attackedTeam.get
                                 (whoAttacked).getName() + "" + "(" + newHP + ")");
 
-                        if (attackedTeam.get(whoAttacked).getHp() <= 0) {//Если перса завалили
-                            System.out.println(attackedTeam.get(whoAttacked).getName() + " Пал смертью храбрых");
-                            attackedTeam.remove(whoAttacked);
-                            System.out.println(attackedTeam.size());
-                        }
 
-                        Thread.sleep(1400);
+
+                        Thread.sleep(140);
+
                     } catch (InterruptedException e) {
                         e.printStackTrace();
                     }
+                    if(newHP<=0) {
+                        if (nameCommandTurn == nameCommand1) {
+                            System.out.println(attackedTeam.get(whoAttacked).getName()+" пал смертью храбрых");
+                            firstTeam.remove(whoAttacked);
+                            size--;
+                        }
+                        if (nameCommandTurn == nameCommand2) {
+                            System.out.println(attackedTeam.get(whoAttacked).getName()+" пал смертью храбрых");
+                            secondTeam.remove(whoAttacked);
+                            size--;
+                        }
+                    }
+
                     attack--;
 
                 }
-                System.out.println("------------------" + '\n' + Thread.currentThread().getName() +
+                System.out.println("------------------" + '\n' + nameCommandTurn +
                         ": Мы сразились, Ваше Высочество!" + '\n'
                         + "------------------");
 
 
+            if (nameCommandTurn == nameCommand1) {
+                nameCommandTurn = nameCommand2;}
+                else{
+                nameCommandTurn = nameCommand1;
+            }
+
+
         }
-
-        /**
-         * Запуск потока
-         */
-        public void run() {
-                getObject();
-
-        }
-
 
 
     }
